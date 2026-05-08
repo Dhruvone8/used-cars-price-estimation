@@ -1,0 +1,55 @@
+{
+  "Audi": [
+    "A4"
+  ],
+  "BMW": [
+    "3 Series"
+  ],
+  "Ford": [
+    "Ecosport",
+    "Figo"
+  ],
+  "Honda": [
+    "Amaze",
+    "City"
+  ],
+  "Hyundai": [
+    "Creta",
+    "EON",
+    "Grand i10",
+    "Santro",
+    "Verna",
+    "i10",
+    "i20"
+  ],
+  "Mahindra": [
+    "Scorpio",
+    "XUV500"
+  ],
+  "Maruti Suzuki": [
+    "Alto",
+    "Baleno",
+    "Celerio",
+    "Ciaz",
+    "Ertiga",
+    "Swift",
+    "Vitara Brezza",
+    "Wagon R"
+  ],
+  "Mercedes-Benz": [
+    "C-Class",
+    "E-Class"
+  ],
+  "Renault": [
+    "Duster"
+  ],
+  "Toyota": [
+    "Corolla",
+    "Fortuner",
+    "Innova"
+  ],
+  "Volkswagen": [
+    "Polo",
+    "Vento"
+  ]
+}
