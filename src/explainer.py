@@ -64,6 +64,9 @@ def explain(shap_vals, feature_names, feature_vals, predicted_price, base_price)
             age = int(vals['Car Age'])
             label = f"Car Age ({age} yrs)"
 
+            direction = "negative" if age >= 5 else "positive"
+            impact_label = f"-₹{impact_rs:,.0f}" if direction == "negative" else f"+₹{impact_rs:,.0f}"
+
             # Use absolute age thresholds first, SHAP only for direction/magnitude
             if age >= 10:
                 icon   = "🔴"
@@ -126,7 +129,7 @@ def explain(shap_vals, feature_names, feature_vals, predicted_price, base_price)
         elif feature == 'Km':
             km    = int(vals['Km'])
             km_yr = vals.get('Km Per Year', 0)
-            label = f"Mileage ({km:,} km)"
+            label = f"Kilometres Driven ({km:,} km)"
             avg   = 15000
             if km_yr > 25000:
                 icon   = "🔴"
@@ -136,7 +139,7 @@ def explain(shap_vals, feature_names, feature_vals, predicted_price, base_price)
                     f"average of 15,000 km/year. Strongly suggests commercial or taxi use."
                 )
                 detail = (
-                    "Extremely high annual mileage accelerates engine wear, "
+                    "Extremely high annual kilometres accelerates engine wear, "
                     "suspension fatigue, and brake wear — significantly reducing "
                     "resale value and raising reliability concerns."
                 )
@@ -151,15 +154,15 @@ def explain(shap_vals, feature_names, feature_vals, predicted_price, base_price)
                     f"{km:,} km — slightly above average usage "
                     f"({km_yr:,.0f} km/yr vs the 15,000 km/yr average). Minor price impact."
                 )
-                detail = "Above-average usage increases buyer perception of wear risk, applying a small discount."
+                detail = "Above-average kilometres driven increases buyer perception of wear risk, applying a small discount."
             elif shap_val < -0.05:
                 icon   = "🟡"
-                simple = f"{km:,} km — moderate mileage. Within acceptable range but nudges price slightly downward."
-                detail = "Mileage is within normal range but buyers will factor it into negotiations."
+                simple = f"{km:,} km — moderate kilometres driven. Within acceptable range but nudges price slightly downward."
+                detail = "Kilometres driven is within normal range but buyers will factor it into negotiations."
             else:
                 icon   = "🟢"
-                simple = f"{km:,} km — low to moderate usage. Well received by buyers and supports asking price."
-                detail = "Low mileage signals less wear and a longer remaining vehicle life — a clear positive."
+                simple = f"{km:,} km — low to moderate kilometres driven. Well received by buyers and supports asking price."
+                detail = "Low kilometres driven signals less wear and a longer remaining vehicle life — a clear positive."
 
         # ── Owner ────────────────────────────────────
         elif feature == 'Owner':
@@ -217,10 +220,10 @@ def explain(shap_vals, feature_names, feature_vals, predicted_price, base_price)
             if vals['Diesel'] == 1:
                 icon   = "🟢"
                 simple = (
-                    "Diesel engine — preferred for highway and high-mileage use. "
+                    "Diesel engine — preferred for highway and high-km use. "
                     "SUVs and MPVs in diesel hold resale value particularly well."
                 )
-                detail = "Diesel's fuel efficiency advantage at high mileage makes it the preferred choice for long-distance buyers, supporting stronger resale."
+                detail = "Diesel's fuel efficiency advantage at high km makes it the preferred choice for long-distance buyers, supporting stronger resale."
             else:
                 icon   = "🟡"
                 simple = "Non-diesel fuel type. Petrol/CNG are preferred for city use with lower running costs."
@@ -334,12 +337,12 @@ def explain(shap_vals, feature_names, feature_vals, predicted_price, base_price)
         })
 
         tech_table.append({
-            "Feature":    feature,
-            "SHAP":       round(shap_val, 4),
-            "₹ Impact":   impact_label,
-            "Effect":     "▲ Adds value" if shap_val > 0 else "▼ Reduces value",
+            "Feature":  feature,
+            "SHAP":     round(shap_val, 4),
+            "₹ Impact": impact_label,
+            "Effect":   "▲ Adds value" if direction == "positive" else "▼ Reduces value",
         })
-
+        
     # ── Deal Score (1–10) ────────────────────────────
     pos = sum(b['impact_rs'] for b in price_breakdown if b['direction'] == 'positive')
     neg = sum(b['impact_rs'] for b in price_breakdown if b['direction'] == 'negative')

@@ -83,7 +83,7 @@ with col3:
 st.divider()
 
 # ── Predict button ───────────────────────────────────
-predict_btn = st.button("🔍 Estimate Price", use_container_width=True, type="primary")
+predict_btn = st.button("🔍 Estimate Price", width='stretch', type="primary")
 
 if predict_btn:
     raw = {
@@ -205,7 +205,7 @@ if predict_btn:
 
         if result['tech_table']:
             tech_df = pd.DataFrame(result['tech_table'])
-            st.dataframe(tech_df, use_container_width=True, hide_index=True)
+            st.dataframe(tech_df, width='stretch', hide_index=True)
 
         # SHAP bar chart
         shap_chart_df = pd.DataFrame({
@@ -215,7 +215,7 @@ if predict_btn:
 
         st.bar_chart(
             shap_chart_df.set_index('Feature')['SHAP Value'],
-            use_container_width=True,
+            width='stretch',
         )
 
         st.caption(

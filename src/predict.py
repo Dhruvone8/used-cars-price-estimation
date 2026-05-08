@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from datetime import datetime
 import joblib
 
 FEATURE_COLUMNS = [
@@ -23,7 +24,8 @@ def prepare_input(raw: dict, encoders: dict) -> pd.DataFrame:
       Transmission, Owner, Location, Engine, Seats
     Returns single-row DataFrame ready for model prediction.
     """
-    car_age     = 2024 - int(raw['Year'])
+    current_year = datetime.now().year  
+    car_age      = current_year - int(raw['Year'])
     km_per_year = float(raw['Km']) / max(car_age, 1)
 
     # ── Label encode ────────────────────────────────
