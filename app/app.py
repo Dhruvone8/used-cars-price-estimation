@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import os
 import sys
+import plotly.graph_objects as go
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(BASE_DIR, 'src'))
@@ -83,7 +84,7 @@ with col3:
 st.divider()
 
 # ── Predict button ───────────────────────────────────
-predict_btn = st.button("🔍 Estimate Price", width='stretch', type="primary")
+predict_btn = st.button("🔍 Estimate Price", use_container_width=True, type="primary")
 
 if predict_btn:
     raw = {
@@ -104,7 +105,7 @@ if predict_btn:
         predicted  = predict_price(ml_model, input_df)
         low, high  = predict_range(predicted)
 
-        input_array          = input_df.values.astype(float)
+        input_array           = input_df.values.astype(float)
         shap_vals, base_price = get_shap_values(shap_explainer, input_array)
 
         result = explain(
@@ -148,22 +149,17 @@ if predict_btn:
         st.info("No significant factors to display for this car.")
     else:
         for item in result['price_breakdown']:
-            impact_color = "🟢" if item['direction'] == 'positive' else "🔴" if item['impact_rs'] > 50000 else "🟡"
             with st.expander(
                 f"{item['icon']}  **{item['label']}** — {item['impact_label']}",
                 expanded=True
             ):
-                # Simple explanation
                 st.markdown(f"**What this means for you:** {item['simple']}")
 
-                # Visual impact bar
-                bar_val = min(item['impact_rs'] / 300000, 1.0)
                 if item['direction'] == 'positive':
                     st.success(f"Impact: {item['impact_label']}")
                 else:
                     st.error(f"Impact: {item['impact_label']}")
 
-                # Detailed explanation in smaller text
                 st.caption(f"📖 More detail: {item['detail']}")
 
     st.divider()
@@ -205,18 +201,64 @@ if predict_btn:
 
         if result['tech_table']:
             tech_df = pd.DataFrame(result['tech_table'])
-            st.dataframe(tech_df, width='stretch', hide_index=True)
+            st.dataframe(tech_df, use_container_width=True, hide_index=True)
 
-        # SHAP bar chart
-        shap_chart_df = pd.DataFrame({
-            'Feature': input_df.columns.tolist(),
-            'SHAP Value': shap_vals,
-        }).sort_values('SHAP Value', key=abs, ascending=True)
+        # ── Waterfall chart: Base Price → Feature impacts → Predicted Price ──
+        st.markdown("**Price build-up: how each feature moves you from the dataset average to this prediction**")
 
-        st.bar_chart(
-            shap_chart_df.set_index('Feature')['SHAP Value'],
-            width='stretch',
+        features    = input_df.columns.tolist()
+        shap_pairs  = list(zip(features, shap_vals))
+
+        # Top 8 by absolute SHAP, then sort ascending by value for waterfall readability
+        shap_pairs  = sorted(shap_pairs, key=lambda x: abs(x[1]), reverse=True)[:8]
+        shap_pairs  = sorted(shap_pairs, key=lambda x: x[1])
+
+        feat_labels = [s[0] for s in shap_pairs]
+        feat_shap   = [s[1] for s in shap_pairs]
+
+        # Convert log-scale SHAP values to signed rupee impacts
+        rupee_impacts = [
+            (float(np.expm1(abs(v))) - 1) * base_price * (1 if v >= 0 else -1)
+            for v in feat_shap
+        ]
+
+        # Build waterfall series
+        measure   = ["absolute"] + ["relative"] * len(feat_labels) + ["total"]
+        x_labels  = ["Avg. Car"] + feat_labels + ["Your Car"]
+        y_vals    = [base_price] + rupee_impacts + [0]   # plotly computes the total automatically
+        text_vals = [f"₹{base_price:,.0f}"]
+        for impact in rupee_impacts:
+            sign = "+" if impact >= 0 else ""
+            text_vals.append(f"{sign}₹{impact:,.0f}")
+        text_vals.append(f"₹{predicted:,.0f}")
+
+        fig = go.Figure(go.Waterfall(
+            orientation  = "v",
+            measure      = measure,
+            x            = x_labels,
+            y            = y_vals,
+            text         = text_vals,
+            textposition = "outside",
+            connector    = {"line": {"color": "#94a3b8", "width": 1, "dash": "dot"}},
+            increasing   = {"marker": {"color": "#22c55e"}},
+            decreasing   = {"marker": {"color": "#ef4444"}},
+            totals       = {"marker": {"color": "#3b82f6"}},
+        ))
+
+        fig.update_layout(
+            yaxis_title      = "Price (₹)",
+            yaxis_tickformat = ",.0f",
+            yaxis_tickprefix = "₹",
+            plot_bgcolor     = "rgba(0,0,0,0)",
+            paper_bgcolor    = "rgba(0,0,0,0)",
+            font             = dict(size=12),
+            margin           = dict(t=30, b=10, l=10, r=10),
+            showlegend       = False,
+            height           = 420,
         )
+        fig.update_xaxes(tickangle=-20)
+
+        st.plotly_chart(fig, use_container_width=True)
 
         st.caption(
             f"Base price (average car in dataset): ₹{base_price:,.0f} | "
